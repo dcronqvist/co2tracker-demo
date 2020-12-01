@@ -56,13 +56,14 @@ function onRightClick(event, nodeKey) {
   alert(`Right clicked ${nodeKey}`);
 }
 
+
 export default function TreeView() {
   return(
     <div className="custom-container">
       <Tree
           data={data}
           height={800}
-          width={1900}
+          width={document.documentElement.clientWidth}
           nodeShape="rect"
           nodeProps={{ rx: 2}}
           gProps={{
