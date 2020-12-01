@@ -53,7 +53,7 @@ function App() {
   return (
     <div style={appStyle}>
       <header style={headerStyle}>
-        <div style={title}>Co2 Tracker Demonstration</div>
+        <div style={title}>Co2-Tracker Demonstration</div>
       </header>
       <Router>
         <div style={subHeader}>
