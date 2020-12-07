@@ -1,5 +1,17 @@
 import Tree from 'react-tree-graph';
-import 'react-tree-graph/dist/style.css'
+import 'react-tree-graph/dist/style.css';
+import axios from 'axios';
+
+const instance = axios.create({
+  method: 'post',
+  baseURL: 'https://co2.dcronqvist.se/',
+  timeout: 1000,
+  headers: {'Content-Type': 'application/json'}
+});
+
+
+
+
 
 // Example POST method implementation:
 async function postData(url = '', data = {}) {
@@ -25,24 +37,90 @@ postData('https://co2.dcronqvist.se/get', { "_id": ["accumulator"] })
     console.log(data); // JSON data parsed by `data.json()` call
   });
 
+var searchproduct = "accumulator";
+var products = {
+  0: searchproduct
+};
+var parents = {
+  0: null
+};
 
+function searchAndAdd(productName) {
+
+  console.log(productName);
+  axios.post('https://co2.dcronqvist.se/benchmarks/get/latest', {
+    "product": productName
+  })
+  .then(function (response) {
+    console.log(response.status);
+    for (const i in response.data.response.sub_products) {
+      for(const property in response.data.response.sub_products[i]){
+        if (property == "product") {
+          var foundProduct = response.data.response.sub_products[i][property];
+          products[Object.keys(products).length] = foundProduct;
+          //parents[Object.keys(parents).length] = productName;
+          searchAndAdd(foundProduct);
+        };
+    }}
+  })
+  .catch(function (error) {
+    console.log(`ERROR FROM ${productName}`);
+  });
+}
+
+function activateLasers() {
+  searchAndAdd(searchproduct);
+/*
+  axios.post('https://co2.dcronqvist.se/benchmarks/get/latest', {
+    "product": "plastic-bar"
+  })
+  .then(function (response) {
+    console.log(response.data.response);
+  })
+  .catch(function (error) {
+    console.log(error);
+  });
+
+*/
+    // searchAndAdd(searchproduct);
+
+
+    /*
+    console.log(Object.keys(products).length)
+    axios.post('https://co2.dcronqvist.se/benchmarks/get/latest', {
+      "product": searchproduct
+    })
+    .then(function (response) {
+      //response.data.response.sub_products.forEach(console.log(this))
+      for (const i in response.data.response.sub_products) {
+        for(const property in response.data.response.sub_products[i]){
+          if (property == "product") {
+            products[Object.keys(products).length] = response.data.response.sub_products[i][property];
+            parents[Object.keys(parents).length] = searchproduct;
+          };
+          console.log(`${property}: ${response.data.response.sub_products[i][property]}`);
+      }
+      }
+      console.log(response);
+      console.log(response.data.response.sub_products);
+      console.log(response.data.response.kg_per_unit);
+      console.log(products);
+      console.log(parents);
+    })
+    .catch(function (error) {
+      console.log(error);
+    });
+    */
+  }
 
 let data = {
-  name: 'Source',
-  children: [{
-      name: 'Alex',
-      children: [{
-          name: 'Samuel'
-      }]
-  }, {
-      name: 'Carl'
-  }, {
-      name: 'Daniel',
-      children: [{
-          name: 'Benjamin',
-          children: [{
-              name: 'Saga'
-          }]
+  name: 'Source (0.5kg)',
+  children: [{ name: 'Alex',
+               children: [{ name: 'Samuel'}]}, {
+               name: 'Carl'}, {
+               name: 'Daniel',
+               children: [{ name: 'Benjamin',
+                            children: [{ name: 'Saga'}]
       }]
   }]
 };
@@ -60,6 +138,9 @@ function onRightClick(event, nodeKey) {
 export default function TreeView() {
   return(
     <div className="custom-container">
+      <button onClick={activateLasers}>
+        Activate Lasers
+      </button>
       <Tree
           data={data}
           height={800}
@@ -71,7 +152,7 @@ export default function TreeView() {
             onContextMenu: onRightClick
           }}
           svgProps={{
-            className: 'custom'
+            className: 'custom',
           }}
           animated/>
     </div>
