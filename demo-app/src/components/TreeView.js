@@ -37,11 +37,11 @@ postData('https://co2.dcronqvist.se/get', { "_id": ["accumulator"] })
     console.log(data); // JSON data parsed by `data.json()` call
   });
 
-var searchproduct = "accumulator";
-var products = {
+let searchproduct = "accumulator";
+let products = {
   0: searchproduct
 };
-var parents = {
+let parents = {
   0: null
 };
 
@@ -52,13 +52,12 @@ function searchAndAdd(productName) {
     "product": productName
   })
   .then(function (response) {
-    console.log(response.status);
     for (const i in response.data.response.sub_products) {
       for(const property in response.data.response.sub_products[i]){
         if (property == "product") {
           var foundProduct = response.data.response.sub_products[i][property];
           products[Object.keys(products).length] = foundProduct;
-          //parents[Object.keys(parents).length] = productName;
+          parents[Object.keys(parents).length] = productName;
           searchAndAdd(foundProduct);
         };
     }}
@@ -68,9 +67,27 @@ function searchAndAdd(productName) {
   });
 }
 
+let data = {
+  name: 'Source (0.5kg)',
+  children: [{ name: 'Alex',
+               children: [{ name: 'Samuel'}]}, {
+               name: 'Carl'}, {
+               name: 'Daniel',
+               children: [{ name: 'Benjamin',
+                            children: [{ name: 'Saga'}]
+      }]
+  }]
+};
 function activateLasers() {
+ 
   searchAndAdd(searchproduct);
-/*
+  console.log(products);
+  console.log(parents);
+  let searchTree = generateTree(searchproduct);
+  console.log(data);
+  console.log(searchTree);
+
+  /*
   axios.post('https://co2.dcronqvist.se/benchmarks/get/latest', {
     "product": "plastic-bar"
   })
@@ -113,17 +130,20 @@ function activateLasers() {
     */
   }
 
-let data = {
-  name: 'Source (0.5kg)',
-  children: [{ name: 'Alex',
-               children: [{ name: 'Samuel'}]}, {
-               name: 'Carl'}, {
-               name: 'Daniel',
-               children: [{ name: 'Benjamin',
-                            children: [{ name: 'Saga'}]
-      }]
-  }]
-};
+
+function generateTree(source){  
+  let node = {name: source, children: []};
+  for(const i in parents){
+    if(parents[i] == source){
+      node.children.push(generateTree(products[i]));
+    }
+  }
+  return node;
+}
+
+/*
+
+*/
 
 function onClick(event, nodeKey) {
   alert(`Left clicked ${nodeKey}`);
@@ -133,7 +153,6 @@ function onRightClick(event, nodeKey) {
   event.preventDefault();
   alert(`Right clicked ${nodeKey}`);
 }
-
 
 export default function TreeView() {
   return(
@@ -145,6 +164,8 @@ export default function TreeView() {
           data={data}
           height={800}
           width={document.documentElement.clientWidth}
+          nodeOffset={10}
+          nodeRadius={10}
           nodeShape="rect"
           nodeProps={{ rx: 2}}
           gProps={{
