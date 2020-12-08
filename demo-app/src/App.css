@@ -19,7 +19,7 @@ svg.custom .node rect {
 }
 
 svg.custom .node text {
-	font-size: 18px;
+	font-size: 20px;
 	background-color: #444;
 	fill: #F4F4F4;
 	text-shadow: 0 1px 4px black;
