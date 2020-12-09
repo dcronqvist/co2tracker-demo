@@ -8,6 +8,7 @@ import {
   Link
 } from "react-router-dom";
 import axios from 'axios';
+import { ToastContainer, toast } from 'react-toastify';
 
 
 const appStyle = {
@@ -53,6 +54,8 @@ const subHeader = {
 function App() {
   return (
     <div style={appStyle}>
+      <ToastContainer
+      />
       <header style={headerStyle}>
         <div style={title}>Co2-Tracker Demonstration</div>
       </header>

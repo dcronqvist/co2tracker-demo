@@ -3,6 +3,8 @@ import Select from 'react-select'
 import makeAnimated from 'react-select/animated';
 import CreatableSelect from 'react-select/creatable';
 import axios from 'axios';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const inputContainer = {
   margin: 'auto',
@@ -145,11 +147,37 @@ export default function Submit() {
       }
     })
     .then((response) =>
-      console.log(response)
+      notifySucess(response)
     )
     .catch((error) =>
-      console.log(error.response)
+      notifyFail(error)
     )
+  }
+
+  function notifySucess(res){
+    console.log(res + "RUN SUCC")
+    toast.success('🦄 Wow so easy!', {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+    });
+  }
+
+  function notifyFail(error){
+    console.log(error)
+    toast.error('🦄' + error, {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+    });
   }
 
   return(
