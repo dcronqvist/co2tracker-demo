@@ -139,7 +139,6 @@ export default function Submit() {
       tempPLSP["transport"] = parseInt(subProds[i + 2])
       payload["benchmark"]["sub_products"].push(tempPLSP)
     }
-    console.log(payload)
 
     axios.post('https://co2.dcronqvist.se/products/create', payload, {
       headers: {
@@ -154,9 +153,11 @@ export default function Submit() {
     )
   }
 
-  function notifySucess(res){
-    console.log(res + "RUN SUCC")
-    toast.success('🦄 Wow so easy!', {
+  function notifySucess(res, input){
+    if (input == null){
+      input = "Wow so easy"
+    }
+    toast.success('🦄 ' + input, {
       position: "bottom-right",
       autoClose: 5000,
       hideProgressBar: false,
@@ -167,9 +168,8 @@ export default function Submit() {
     });
   }
 
-  function notifyFail(error){
-    console.log(error)
-    toast.error('🦄' + error, {
+  function notifyFail(error, input){
+    toast.error('🦄 ' + error + ' '+  input, {
       position: "bottom-right",
       autoClose: 5000,
       hideProgressBar: false,
@@ -178,6 +178,22 @@ export default function Submit() {
       draggable: true,
       progress: undefined,
     });
+  }
+
+  function prodIdAction(e){
+    axios.post('https://co2.dcronqvist.se/products/search/id', {"_id" : [prodId.toUpperCase()]}, {
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+    .then((response) =>
+      notifySucess(response, 'Product already in system')
+    )
+    .catch((error) => {
+      if(error.response){
+        notifyFail(error.response.data.response, "This is a new item")
+    } else notifyFail(error)
+    })
   }
 
   return(
@@ -187,6 +203,7 @@ export default function Submit() {
       <form style={formStyle}>
         <div style={inputContainer}>
           <input
+            onBlur={(e) => prodIdAction(e)}
             onChange={(e) => setProdId(e.target.value)}
             style={inputStyle}
             type="text"
@@ -204,7 +221,7 @@ export default function Submit() {
             <CreatableSelect
               placeholder="Select product tags"
               components={animatedComponents}
-              onChange={(e) => console.log(e)}
+              onChange={(e) => setProdTags(e)}
               isMulti={true}
               options={tags}
             />
