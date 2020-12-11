@@ -34,3 +34,8 @@ svg.custom path.link {
 	stroke: #2593B8;
 	stroke-width: 1.5px;
 }
+
+input[type="text"]:disabled {
+  background-color: #1f1d1d;
+	display: none;
+}

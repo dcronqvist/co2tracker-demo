@@ -65,9 +65,12 @@ export default function Submit() {
   const [prodEnergySources, setEnergySources] = useState([])
   const [subProds, setSubProds] = useState([])
   const [nSubs, setNSubs] = useState([])
+  const [isAboutUpdate, setAboutUpdate] = useState(false)
 
-  function addEle(e) {
-    setNSubs(Array.from({length: e.value}, (_, i) => i + 1))
+  const [menuSources, setMenuSources] = useState([])
+
+  function addEle(val) {
+    setNSubs(Array.from({length: val}, (_, i) => i + 1))
   }
 
   const changeHandler = e => {
@@ -90,10 +93,10 @@ export default function Submit() {
   ]
 
   const energySources = [
-    { value: 'fossilFuel', label: 'Fossil fuels' },
-    { value: 'genElec', label: 'Electricity' },
-    { value: 'nonFFElec', label: 'Non fossil fuel generated electricity' },
-    { value: 'bioGas', label: 'Bio Gas' }
+    { value: 'Fossil fuels', label: 'Fossil fuels' },
+    { value: 'Electricity', label: 'Electricity' },
+    { value: 'Non fossil fuel generated electricity', label: 'Non fossil fuel generated electricity' },
+    { value: 'Bio Gas', label: 'Bio Gas' }
   ]
   const numList = [
     { value: '1', label: '1' },
@@ -106,8 +109,10 @@ export default function Submit() {
   const animatedComponents = makeAnimated();
 
   function postData() {
+    console.log(menuSources)
+    console.log(prodEnergySources)
 
-    let payload = {
+    let payloadCreate = {
       "_id": prodId,
       "type": "product",
       "tags": prodTags.map(o => o["value"]),
@@ -126,21 +131,47 @@ export default function Submit() {
       }
     }
 
+    let payloadUpdate = {
+      "product" : prodId,
+      "kg_per_unit": parseFloat(prodWeight),
+      "unit" : "kg",
+      "self_impact": {
+          "co2": parseFloat(prodSelfImpact),
+          "measurement_error": parseFloat(prodImpactError),
+          "energy_sources": prodEnergySources
+      },
+      "sub_products": []
+    }
+
     const payloadSubProduct = {
       "product": ["str"],
       "unit_amount": ["float", "int"],
       "transport": ["int", "str"]
     }
 
+
     for (let i = 0; i < subProds.length; i += 3){
       let tempPLSP = {...payloadSubProduct}
       tempPLSP["product"] = subProds[i]
       tempPLSP["unit_amount"] = parseFloat(subProds[i + 1])
       tempPLSP["transport"] = parseInt(subProds[i + 2])
-      payload["benchmark"]["sub_products"].push(tempPLSP)
+      payloadCreate["benchmark"]["sub_products"].push(tempPLSP)
     }
 
-    axios.post('https://co2.dcronqvist.se/products/create', payload, {
+    //yes this is dumb but im lazy
+    for (let i = 0; i < subProds.length; i += 3){
+      let tempPLSP = {...payloadSubProduct}
+      tempPLSP["product"] = subProds[i]
+      tempPLSP["unit_amount"] = parseFloat(subProds[i + 1])
+      tempPLSP["transport"] = parseInt(subProds[i + 2])
+      payloadUpdate["sub_products"].push(tempPLSP)
+    }
+
+    let createURL = 'https://co2.dcronqvist.se/products/create'
+    let updateURL = 'https://co2.dcronqvist.se/benchmarks/create'
+
+    console.log(payloadUpdate)
+    axios.post(isAboutUpdate ? updateURL : createURL, isAboutUpdate ? payloadUpdate : payloadCreate, {
       headers: {
         'Content-Type': 'application/json',
       }
@@ -180,20 +211,109 @@ export default function Submit() {
     });
   }
 
+  function notifyInfo(error, input){
+    toast.info('🦄 ' + error + ' '+  input, {
+      position: "bottom-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+    });
+  }
+
   function prodIdAction(e){
-    axios.post('https://co2.dcronqvist.se/products/search/id', {"_id" : [prodId.toUpperCase()]}, {
+    if(prodId == ""){
+      setAboutUpdate(false)
+      setProdId("")
+      setProdName("")
+      setProdTags([])
+      setProdWeight("")
+      setTypeDesc("")
+      setSelfImpact("")
+      setImpactError("")
+      setEnergySources([])
+      setSubProds([])
+      setNSubs([])
+      setMenuSources([])
+      return
+    }
+    axios.post('https://co2.dcronqvist.se/products/search/id', {"_id" : [prodId]}, {
       headers: {
         'Content-Type': 'application/json',
       }
     })
-    .then((response) =>
+    .then((response) => {
+      // console.log(prodId.toUpperCase())
       notifySucess(response, 'Product already in system')
-    )
+      axios.post('https://co2.dcronqvist.se/benchmarks/get/latest', {"product" : prodId}, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      .then((response) => {
+        notifySucess(response, "Pulled product information from db")
+        setAboutUpdate(true)
+        console.log(response.data.response)
+        setProdWeight(response.data.response.kg_per_unit)
+        setSelfImpact(response.data.response.self_impact.co2)
+        setEnergySources(response.data.response.self_impact.energy_sources)
+        setImpactError(response.data.response.self_impact.measurement_error)
+        addEle(response.data.response.sub_products.length)
+
+        let copy = []
+
+        for(let i = 0; i < response.data.response.sub_products.length; i++){
+          copy.push(response.data.response.sub_products[i]['product'])
+          copy.push(response.data.response.sub_products[i]['unit_amount'])
+          copy.push(response.data.response.sub_products[i]['transport'])
+        }
+        setSubProds(copy)
+
+        console.log(response.data.response.self_impact.energy_sources)
+        let copyOfEnergy = [...response.data.response.self_impact.energy_sources]
+        console.log(copyOfEnergy)
+
+        copyOfEnergy = copyOfEnergy.map(o => (
+          {
+          'value' : o,
+          'label' : o
+          }
+        ))
+        console.log(copyOfEnergy)
+        setMenuSources(copyOfEnergy)
+        console.log(menuSources)
+      })
+      .catch((error) => {
+        if(error.response){
+          notifyFail(error.response.data.response, "test")
+      } else {
+        notifyInfo(error)
+      }
+      })
+    })
     .catch((error) => {
       if(error.response){
-        notifyFail(error.response.data.response, "This is a new item")
-    } else notifyFail(error)
+        setAboutUpdate(false)
+        notifyInfo(error.response.data.response, "This is a new item")
+        setProdId("")
+        setProdName("")
+        setProdTags([])
+        setProdWeight("")
+        setTypeDesc("")
+        setSelfImpact("")
+        setImpactError("")
+        setEnergySources([])
+        setSubProds([])
+        setNSubs([])
+        setMenuSources([])
+    } else notifyInfo(error)
     })
+  }
+
+  const aboutUpdateStyle = {
+    display: isAboutUpdate ? 'none' : 'grid',
   }
 
   return(
@@ -207,24 +327,36 @@ export default function Submit() {
             onChange={(e) => setProdId(e.target.value)}
             style={inputStyle}
             type="text"
-            placeholder="Internal Product ID"/>
-        </div>
-        <div style={inputContainer}>
-          <input
-            onChange={(e) => setProdName(e.target.value)}
-            style={inputStyle}
-            type="text"
-            placeholder="Product Name"/>
-        </div>
-        <div style={multiSelectStyle}>
-          <div style={selectStyleContainer}>
-            <CreatableSelect
-              placeholder="Select product tags"
-              components={animatedComponents}
-              onChange={(e) => setProdTags(e)}
-              isMulti={true}
-              options={tags}
+            placeholder="Internal Product ID"
             />
+        </div>
+        <div style={aboutUpdateStyle}>
+          <div style={inputContainer}>
+            <input
+              onChange={(e) => setProdName(e.target.value)}
+              style={inputStyle}
+              type="text"
+              placeholder="Product Name"
+              value={prodName}/>
+          </div>
+          <div style={multiSelectStyle}>
+            <div style={selectStyleContainer}>
+              <CreatableSelect
+                placeholder="Select product tags"
+                components={animatedComponents}
+                onChange={(e) => setProdTags(e)}
+                isMulti={true}
+                options={tags}
+              />
+            </div>
+          </div>
+          <div style={multiSelectStyle}>
+            <div style={selectStyleContainer}>
+              <Select
+                placeholder="Select update type"
+                onChange={(e) => setTypeDesc(e.value)}
+                options={options}/>
+            </div>
           </div>
         </div>
         <div style={inputContainer}>
@@ -232,49 +364,48 @@ export default function Submit() {
             onChange={(e) => setProdWeight(e.target.value)}
             style={inputStyle}
             type="text"
-            placeholder="Product Wight per Unit (kg)"/>
+            placeholder="Product Wight per Unit (kg)"
+            value={prodWeight}/>
         </div>
-        <div style={multiSelectStyle}>
-          <div style={selectStyleContainer}>
-            <Select
-              placeholder="Select update type"
-              onChange={(e) => setTypeDesc(e.value)}
-              options={options}/>
-          </div>
-        </div>
+
         <div style={inputContainer}>
           <input
             onChange={(e) => setSelfImpact(e.target.value)}
             style={inputStyle}
             type="text"
-            placeholder="Co2 Self Impact per Unit (kg)"/>
+            placeholder="Co2 Self Impact per Unit (kg)"
+            value={prodSelfImpact}/>
         </div>
         <div style={inputContainer}>
           <input
             onChange={(e) => setImpactError(e.target.value)}
             style={inputStyle}
             type="text"
-            placeholder="Measurement Error | ex 0.05"/>
+            placeholder="Measurement Error | ex 0.05"
+            value={prodImpactError}/>
         </div>
         <div style={multiSelectStyle}>
           <div style={selectStyleContainer}>
             <CreatableSelect
               placeholder="Select energy sources"
               components={animatedComponents}
-              onChange={(e) => setEnergySources(e)}
+              onChange={(e) => {setEnergySources(e)
+              }}
               isMulti={true}
               options={energySources}
+              value={prodEnergySources}
             />
           </div>
         </div>
         <center><h2>Sub Products</h2></center>
-
-        <div style={multiSelectStyle}>
-          <div style={selectStyleContainer}>
-            <CreatableSelect
-              placeholder="Select the number of sub products"
-              onChange={(e) => addEle(e)}
-              options={numList}/>
+        <div style={aboutUpdateStyle}>
+          <div style={multiSelectStyle}>
+            <div style={selectStyleContainer}>
+              <CreatableSelect
+                placeholder="Select the number of sub products"
+                onChange={(e) => addEle(e.value)}
+                options={numList}/>
+            </div>
           </div>
         </div>
         {nSubs.map((item) => (
@@ -282,7 +413,8 @@ export default function Submit() {
             subProds={subProds}
             setSubProds={setSubProds}
             key={item}
-            data={item}/>
+            data={item}
+          />
         ))}
         <div style={inputContainer}>
           <div onClick={postData} style={button}>
@@ -312,21 +444,24 @@ function SubProductForm(props) {
           onChange={(e) => fixShit(0, e)}
           style={inputStyle}
           type="text"
-          placeholder="Internal Product ID"/>
+          placeholder="Internal Product ID"
+          value={props.subProds[(props.data - 1) * 3]}/>
       </div>
       <div style={inputContainer}>
         <input
           onChange={(e) => fixShit(1, e)}
           style={inputStyle}
           type="text"
-          placeholder="Unit amount"/>
+          placeholder="Unit amount"
+          value={props.subProds[(props.data - 1) * 3 + 1]}/>
       </div>
       <div style={inputContainer}>
         <input
           onChange={(e) => fixShit(2, e)}
           style={inputStyle}
           type="text"
-          placeholder="Product Transport ID"/>
+          placeholder="Product Transport ID"
+          value={props.subProds[(props.data - 1) * 3 + 2]}/>
       </div>
     </div>
 
