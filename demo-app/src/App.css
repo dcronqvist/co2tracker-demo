@@ -4,7 +4,19 @@
 
 div.custom-container {
 	background-color: #242424;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
+
+div.input-container {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	margin: 20px;
+}
+
+
 
 svg.custom .node circle {
   fill: #F3F3FF;

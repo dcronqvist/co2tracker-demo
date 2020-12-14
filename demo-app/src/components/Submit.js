@@ -111,6 +111,7 @@ export default function Submit() {
   function postData() {
     console.log(menuSources)
     console.log(prodEnergySources)
+    console.log(prodId)
 
     let payloadCreate = {
       "_id": prodId,
@@ -170,7 +171,7 @@ export default function Submit() {
     let createURL = 'https://co2.dcronqvist.se/products/create'
     let updateURL = 'https://co2.dcronqvist.se/benchmarks/create'
 
-    console.log(payloadUpdate)
+    console.log(payloadCreate)
     axios.post(isAboutUpdate ? updateURL : createURL, isAboutUpdate ? payloadUpdate : payloadCreate, {
       headers: {
         'Content-Type': 'application/json',
@@ -224,6 +225,7 @@ export default function Submit() {
   }
 
   function prodIdAction(e){
+    /*
     if(prodId == ""){
       setAboutUpdate(false)
       setProdId("")
@@ -239,6 +241,7 @@ export default function Submit() {
       setMenuSources([])
       return
     }
+    */
     axios.post('https://co2.dcronqvist.se/products/search/id', {"_id" : [prodId]}, {
       headers: {
         'Content-Type': 'application/json',
@@ -297,7 +300,6 @@ export default function Submit() {
       if(error.response){
         setAboutUpdate(false)
         notifyInfo(error.response.data.response, "This is a new item")
-        setProdId("")
         setProdName("")
         setProdTags([])
         setProdWeight("")
@@ -324,7 +326,9 @@ export default function Submit() {
         <div style={inputContainer}>
           <input
             onBlur={(e) => prodIdAction(e)}
-            onChange={(e) => setProdId(e.target.value)}
+            onChange={(e) => {
+              setProdId(e.target.value)
+            }}
             style={inputStyle}
             type="text"
             placeholder="Internal Product ID"
